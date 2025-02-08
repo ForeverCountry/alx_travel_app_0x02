@@ -1,14 +1,29 @@
-from rest_framework import routers
 from django.urls import path, include
-from .views import ListingViewSet, BookingViewSet, user_listings, user_bookings, listing_bookings
+from rest_framework.routers import DefaultRouter
+from .views import (
+    ListingViewSet,
+    BookingViewSet,
+    ReviewViewSet,
+    InitiatePaymentAPIView,
+    VerifyPaymentAPIView,
+)
 
-router = routers.DefaultRouter()
-router.register('listings', ListingViewSet)
-router.register('bookings', BookingViewSet)
+
+router = DefaultRouter()
+router.register(r"listings", ListingViewSet)
+router.register(r"bookings", BookingViewSet)
+router.register(r"reviews", ReviewViewSet)
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('listings/<listing_id>/bookings/', listing_bookings),
-    path('users/<user_id>/bookings/', user_bookings),
-    path('users/<user_id>/listings/', user_listings),
+    path("", include(router.urls)),
+    path(
+        "payments/initiate/",
+        InitiatePaymentAPIView.as_view(),
+        name="initiate-payment",
+    ),
+    path(
+        "payments/verify/",
+        VerifyPaymentAPIView.as_view(),
+        name="verify-payment",
+    ),
 ]

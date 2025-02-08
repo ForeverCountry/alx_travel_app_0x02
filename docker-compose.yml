@@ -1,0 +1,98 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - MYSQL_DB=${MYSQL_DB}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_HOST=db
+      - MYSQL_PORT=3306
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - EMAIL_HOST=mailpit
+      - EMAIL_PORT=1025
+      - EMAIL_USE_TLS=False
+      - DEFAULT_FROM_EMAIL=test@alxtravelapp.com
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+      - mailpit
+
+  celery:
+    build: .
+    command: celery -A alx_travel_app worker -l info
+    volumes:
+      - .:/app
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - MYSQL_DB=${MYSQL_DB}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_HOST=db
+      - MYSQL_PORT=3306
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - EMAIL_HOST=mailpit
+      - EMAIL_PORT=1025
+      - EMAIL_USE_TLS=False
+      - DEFAULT_FROM_EMAIL=test@alxtravelapp.com
+    depends_on:
+      - web
+      - db
+      - redis
+      - rabbitmq
+      - mailpit
+
+  db:
+    image: mysql:8.0
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DB}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
+
+  redis:
+    image: redis:7.0-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    ports:
+      - "5672:5672" # AMQP protocol port
+      - "15672:15672" # Management interface port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port
+    volumes:
+      - mailpit_data:/data
+
+volumes:
+  mysql_data:
+  redis_data:
+  rabbitmq_data:
+  mailpit_data:
